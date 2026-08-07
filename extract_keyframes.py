@@ -10,10 +10,12 @@ from pipeline.keyframes import process_video
 VIDEOS_DIR = Path("data/videos")
 SCENES_DIR = Path("data/staging")
 KEYFRAMES_DIR = Path("data/keyframes")
+MEDIA_INFO_DIR = Path("data/media-info")
 DB_PATH = Path("data/metadata.db")
 
 VIDEO_SUFFIX = ".webm"
 SCENES_SUFFIX = ".scenes.txt"
+MEDIA_INFO_SUFFIX = ".json"
 DECODER = "av1_cuvid"  # GPU decode; videos are AV1
 
 
@@ -22,6 +24,7 @@ def main():
     parser.add_argument("--videos-dir", type=Path, default=VIDEOS_DIR)
     parser.add_argument("--scenes-dir", type=Path, default=SCENES_DIR)
     parser.add_argument("--keyframes-dir", type=Path, default=KEYFRAMES_DIR)
+    parser.add_argument("--media-info-dir", type=Path, default=MEDIA_INFO_DIR)
     parser.add_argument("--db", type=Path, default=DB_PATH)
     parser.add_argument("--decoder", default=DECODER,
                         help=f"ffmpeg decoder (default: {DECODER}; use 'libdav1d' for CPU)")
@@ -52,7 +55,8 @@ def main():
                 print(f"[{video_id}] no video at {video_path}, skipping")
                 failed.append(video_id)
                 continue
-            if not process_video(db, video_id, video_path, scenes_file,
+            media_info_file = args.media_info_dir / f"{video_id}{MEDIA_INFO_SUFFIX}"
+            if not process_video(db, video_id, video_path, scenes_file, media_info_file,
                                  args.keyframes_dir, args.decoder, args.quality,
                                  args.force):
                 failed.append(video_id)

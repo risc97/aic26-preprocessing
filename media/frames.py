@@ -5,10 +5,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from media.preprocess import preprocess
+
 
 def extract_frames(video_path: Path, frame_numbers: list[int], out_dir: Path,
-                   decoder: str, quality: int) -> list[Path]:
-    """Extract all frame with one ffmpeg call"""
+                   decoder: str, quality: int, clean_overlay: bool = False) -> list[Path]:
+    """Extract all frame with one ffmpeg call, and clean overlay if need"""
     # filter that grabs every mid-frame at once
     select_filter = "+".join(f"eq(n\\,{fn})" for fn in frame_numbers)
 
@@ -32,6 +34,8 @@ def extract_frames(video_path: Path, frame_numbers: list[int], out_dir: Path,
         for i, src in enumerate(produced):
             dst = out_dir / f"{i + 1:04}.jpg"
             shutil.move(str(src), dst)
+            if clean_overlay:
+                preprocess(dst)
             saved.append(dst)
         return saved
     finally:

@@ -5,12 +5,13 @@ from pathlib import Path
 
 from db import MetadataDatabase
 from media.frames import extract_frames
+from media.preprocess import has_overlay
 from media.probe import probe_video
 from media.scenes import read_scenes
 
 
 def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
-                  scenes_file: Path, keyframes_dir: Path,
+                  scenes_file: Path, media_info_file: Path, keyframes_dir: Path,
                   decoder: str, quality: int, force: bool) -> bool:
     """Extract one video's keyframes and store data"""
     kf_dir = keyframes_dir / video_id
@@ -35,7 +36,9 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
         kept.append((span, mid))
 
     fps, duration_ms = probe_video(video_path)
-    print(f"[{video_id}] extracting {len(kept)} keyframes ({fps:.3f} fps)...")
+    clean_overlay = has_overlay(media_info_file)
+    note = ", blacking out overlays" if clean_overlay else ""
+    print(f"[{video_id}] extracting {len(kept)} keyframes ({fps:.3f} fps){note}...")
 
     db.videos.upsert(video_id, str(video_path), duration_ms, fps)
     if force:
@@ -44,7 +47,8 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
 
     shutil.rmtree(kf_dir, ignore_errors=True)
     try:
-        images = extract_frames(video_path, [mid for _, mid in kept], kf_dir, decoder, quality)
+        images = extract_frames(video_path, [mid for _, mid in kept], kf_dir, decoder,
+                                quality, clean_overlay)
     except RuntimeError as e:
         print(f"[{video_id}] FAILED: {e}")
         shutil.rmtree(kf_dir, ignore_errors=True)
