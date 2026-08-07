@@ -1,3 +1,7 @@
 ffmpeg-python
 torch
 pillow
+numpy
+pandas
+tqdm
+opencv-python-headless
