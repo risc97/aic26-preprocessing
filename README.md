@@ -1,9 +1,9 @@
 ```bash
 .
 ├── data
-│   ├── keyframe
+│   ├── keyframes
 │   ├── staging
-│   └── video
+│   └── videos
 │       └── ... .webm
 ├── dev.md
 ├── download_data.sh

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from models import Video, row_to_video
+from .models import Video, row_to_video
 
 
 class VideoRepo:

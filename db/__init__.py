@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from connection import connect, transaction
-from models import Keyframe, Segment, Video
-from schema import init_schema
-from segments import SegmentRepo
-from keyframes import KeyframeRepo
-from videos import VideoRepo
+from .connection import connect, transaction
+from .models import Keyframe, Segment, Video
+from .schema import init_schema
+from .segments import SegmentRepo
+from .keyframes import KeyframeRepo
+from .videos import VideoRepo
 
 
 class MetadataDatabase:

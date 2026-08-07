@@ -3,8 +3,8 @@ from __future__ import annotations
 import sqlite3
 from typing import Iterable
 
-from connection import transaction
-from models import Keyframe, row_to_keyframe
+from .connection import transaction
+from .models import Keyframe, row_to_keyframe
 
 
 class KeyframeRepo:

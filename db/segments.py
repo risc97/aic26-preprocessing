@@ -3,8 +3,8 @@ from __future__ import annotations
 import sqlite3
 from typing import Iterable
 
-from connection import transaction
-from models import Segment, row_to_segment
+from .connection import transaction
+from .models import Segment, row_to_segment
 
 
 class SegmentRepo:
