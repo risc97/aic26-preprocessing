@@ -37,4 +37,8 @@ for url in "${URLS[@]}"; do
     rm -f "$zip_path"
 done
 
+wget -t 10 -c -P "data/" "https://aic-data.ledo.io.vn/media-info-aic25-b1.zip"
+unzip data/media-info-aic25-b1.zip -d data/
+rm -f data/media-info-aic25-b1.zip
+
 echo "==> Done"
