@@ -41,9 +41,9 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
     print(f"[{video_id}] extracting {len(kept)} keyframes ({fps:.3f} fps){note}...")
 
     db.videos.upsert(video_id, str(video_path), duration_ms, fps)
-    if force:
-        db.keyframes.delete_by_video(video_id)
-        db.segments.delete_by_video(video_id)
+    db.keyframes.delete_by_video(video_id)
+    db.segments.delete_by_video(video_id)
+
 
     shutil.rmtree(kf_dir, ignore_errors=True)
     try:
