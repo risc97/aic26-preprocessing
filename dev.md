@@ -9,6 +9,9 @@ python init_db.py
 transnetv2_pytorch ./data/video/
 
 python extract_keyframes.py
+
+python embed_keyframes.py
+python build_index.py
 ```
 
 psychology for developing pipeline

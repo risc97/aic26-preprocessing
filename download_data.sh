@@ -4,7 +4,7 @@ TARGET_DIR="data/video"
 
 DELETE_ZIP="${DELETE_ZIP:-0}"
 
-mkdir -p "$TARGET_DIR" data/keyframe
+mkdir -p "$TARGET_DIR" data/keyframes data/staging data/embeddings
 
 URLS=(
     "https://aic-data.ledo.io.vn/Videos_L21_a.zip"
