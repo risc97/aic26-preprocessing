@@ -24,7 +24,7 @@ class Segment:
 class Keyframe:
     keyframe_id: int
     video_id: str
-    frame_id: int
+    frame_idx: int
     timestamp_ms: int
     image_path: str
     segment_id: int
@@ -47,6 +47,6 @@ def row_to_segment(r: sqlite3.Row) -> Segment:
 def row_to_keyframe(r: sqlite3.Row) -> Keyframe:
     return Keyframe(
         keyframe_id=r["keyframe_id"], video_id=r["video_id"],
-        frame_id=r["frame_id"], timestamp_ms=r["timestamp_ms"],
+        frame_idx=r["frame_idx"], timestamp_ms=r["timestamp_ms"],
         image_path=r["image_path"], segment_id=r["segment_id"],
     )

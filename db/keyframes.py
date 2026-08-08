@@ -13,21 +13,21 @@ class KeyframeRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def create(self, video_id: str, frame_id: int, timestamp_ms: int,
+    def create(self, video_id: str, frame_idx: int, timestamp_ms: int,
                image_path: str, segment_id: int) -> Keyframe:
         cur = self.conn.execute(
-            "INSERT INTO keyframes (video_id, frame_id, timestamp_ms, image_path, segment_id) "
+            "INSERT INTO keyframes (video_id, frame_idx, timestamp_ms, image_path, segment_id) "
             "VALUES (?, ?, ?, ?, ?)",
-            (video_id, frame_id, timestamp_ms, image_path, segment_id),
+            (video_id, frame_idx, timestamp_ms, image_path, segment_id),
         )
         self.conn.commit()
-        return Keyframe(cur.lastrowid, video_id, frame_id, timestamp_ms, image_path, segment_id)
+        return Keyframe(cur.lastrowid, video_id, frame_idx, timestamp_ms, image_path, segment_id)
 
     def create_many(self, rows: Iterable[tuple[str, int, int, str, int | None]]) -> int:
         rows = list(rows)
         with transaction(self.conn) as conn:
             conn.executemany(
-                "INSERT INTO keyframes (video_id, frame_id, timestamp_ms, image_path, segment_id) "
+                "INSERT INTO keyframes (video_id, frame_idx, timestamp_ms, image_path, segment_id) "
                 "VALUES (?, ?, ?, ?, ?)",
                 rows,
             )
@@ -67,29 +67,29 @@ class KeyframeRepo:
 
     def list_by_segment(self, segment_id: int) -> list[Keyframe]:
         rows = self.conn.execute(
-            "SELECT * FROM keyframes WHERE segment_id = ? ORDER BY frame_id", (segment_id,)
+            "SELECT * FROM keyframes WHERE segment_id = ? ORDER BY frame_idx", (segment_id,)
         ).fetchall()
         return [row_to_keyframe(r) for r in rows]
 
     def update(
         self, keyframe_id: int,
-        frame_id: int | None = None, timestamp_ms: int | None = None,
+        frame_idx: int | None = None, timestamp_ms: int | None = None,
         image_path: str | None = None, segment_id: int | None = None,
     ) -> Keyframe | None:
         existing = self.get(keyframe_id)
         if existing is None:
             return None
-        frame_id = existing.frame_id if frame_id is None else frame_id
+        frame_idx = existing.frame_idx if frame_idx is None else frame_idx
         timestamp_ms = existing.timestamp_ms if timestamp_ms is None else timestamp_ms
         image_path = existing.image_path if image_path is None else image_path
         segment_id = existing.segment_id if segment_id is None else segment_id
         self.conn.execute(
-            "UPDATE keyframes SET frame_id = ?, timestamp_ms = ?, image_path = ?, "
+            "UPDATE keyframes SET frame_idx = ?, timestamp_ms = ?, image_path = ?, "
             "segment_id = ? WHERE keyframe_id = ?",
-            (frame_id, timestamp_ms, image_path, segment_id, keyframe_id),
+            (frame_idx, timestamp_ms, image_path, segment_id, keyframe_id),
         )
         self.conn.commit()
-        return Keyframe(keyframe_id, existing.video_id, frame_id, timestamp_ms,
+        return Keyframe(keyframe_id, existing.video_id, frame_idx, timestamp_ms,
                         image_path, segment_id)
 
     def delete(self, keyframe_id: int) -> bool:
