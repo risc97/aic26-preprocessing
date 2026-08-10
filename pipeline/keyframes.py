@@ -56,7 +56,7 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
 
     segments = db.segments.create_many(video_id, [span for span, _ in kept])
     db.keyframes.create_many([
-        (video_id, mid, int(round(mid / fps * 1000)), str(image), segment.segment_id)
+        (video_id, image.stem, mid, int(round(mid / fps * 1000)), str(image), segment.segment_id)
         for (_, mid), segment, image in zip(kept, segments, images)
     ])
 

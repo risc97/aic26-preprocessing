@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from db import MetadataDatabase
 from models import C2Lip, EMBED_DIM
+from pipeline.ids import vector_id
 
 
 class KeyframeDataset(Dataset):
@@ -26,7 +27,7 @@ class KeyframeDataset(Dataset):
 
 def shard_paths(shard_dir: Path, video_id: str) -> tuple[Path, Path]:
     # <shard_dir>/<video_id>.npy      float16 (n, 768), L2-normalised
-    # <shard_dir>/<video_id>.ids.npy  int64   (n,)      keyframe_id per row
+    # <shard_dir>/<video_id>.ids.npy  int64   (n,)      packed vector id per row
     return shard_dir / f"{video_id}.npy", shard_dir / f"{video_id}.ids.npy"
 
 
@@ -75,7 +76,7 @@ def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Pa
         row += len(vecs)
     assert row == len(keyframes), f"encoded {row} of {len(keyframes)}"
 
-    ids = np.array([k.keyframe_id for k in keyframes], dtype=np.int64)
+    ids = np.array([vector_id(k.video_id, k.keyframe_id) for k in keyframes], dtype=np.int64)
     vec_path, ids_path = shard_paths(shard_dir, video_id)
     shard_dir.mkdir(parents=True, exist_ok=True)
     # write to .tmp then rename so a crash never create a broken shard
