@@ -10,9 +10,18 @@ from media.probe import probe_video
 from media.scenes import read_scenes
 
 
+def _pick_frame(span: tuple[int, int], mode: str) -> int:
+    if mode == "left":
+        return span[0]
+    if mode == "right":
+        return span[1]
+    return (span[0] + span[1]) // 2  # mid
+
+
 def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
                   scenes_file: Path, media_info_file: Path, keyframes_dir: Path,
-                  decoder: str, quality: int, force: bool) -> bool:
+                  decoder: str, quality: int, force: bool,
+                  mode: str = "mid") -> bool:
     """Extract one video's keyframes and store data"""
     kf_dir = keyframes_dir / video_id
 
@@ -28,12 +37,12 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
     seen: set[int] = set()
     kept: list[tuple[tuple[int, int], int]] = []
     for span in spans:
-        mid = (span[0] + span[1]) // 2
-        if mid in seen:
-            print(f"  skipping scene {span[0]}-{span[1]}: duplicate mid-frame {mid}")
+        frame = _pick_frame(span, mode)
+        if frame in seen:
+            print(f"  skipping scene {span[0]}-{span[1]}: duplicate {mode}-frame {frame}")
             continue
-        seen.add(mid)
-        kept.append((span, mid))
+        seen.add(frame)
+        kept.append((span, frame))
 
     fps, duration_ms = probe_video(video_path)
     clean_overlay = has_overlay(media_info_file)
@@ -44,10 +53,10 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
     db.keyframes.delete_by_video(video_id)
     db.segments.delete_by_video(video_id)
 
-
+    frames = [f for _, f in kept]
     shutil.rmtree(kf_dir, ignore_errors=True)
     try:
-        images = extract_frames(video_path, [mid for _, mid in kept], kf_dir, decoder,
+        images = extract_frames(video_path, frames, kf_dir, decoder,
                                 quality, clean_overlay)
     except RuntimeError as e:
         print(f"[{video_id}] FAILED: {e}")
@@ -56,8 +65,8 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
 
     segments = db.segments.create_many(video_id, [span for span, _ in kept])
     db.keyframes.create_many([
-        (video_id, image.stem, mid, int(round(mid / fps * 1000)), str(image), segment.segment_id)
-        for (_, mid), segment, image in zip(kept, segments, images)
+        (video_id, f, int(round(f / fps * 1000)), str(image), segment.segment_id)
+        for (_, f), segment, image in zip(kept, segments, images)
     ])
 
     print(f"[{video_id}] saved {len(images)} keyframes and {len(segments)} segments")

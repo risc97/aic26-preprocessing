@@ -16,7 +16,7 @@ DB_PATH = Path("data/metadata.db")
 VIDEO_SUFFIX = ".webm"
 SCENES_SUFFIX = ".scenes.txt"
 MEDIA_INFO_SUFFIX = ".json"
-DECODER = "av1_cuvid"  # GPU decode; videos are AV1
+DECODER = "libdav1d"  # CPU AV1 decode; containers rarely expose NVDEC
 
 
 def main():
@@ -32,6 +32,8 @@ def main():
                         help="ffmpeg JPEG quality, 2 (best) to 31 (worst)")
     parser.add_argument("--video", action="append", metavar="VIDEO_ID",
                         help="only process this video id (repeatable)")
+    parser.add_argument("--mode", choices=("left", "mid", "right"), default="mid",
+                        help="which frame in each scene to take (default: mid)")
     parser.add_argument("--force", action="store_true",
                         help="re-extract videos that already have keyframes")
     args = parser.parse_args()
@@ -57,8 +59,8 @@ def main():
                 continue
             media_info_file = args.media_info_dir / f"{video_id}{MEDIA_INFO_SUFFIX}"
             if not process_video(db, video_id, video_path, scenes_file, media_info_file,
-                                 args.keyframes_dir, args.decoder, args.quality,
-                                 args.force):
+                                 args.keyframes_dir / args.mode, args.decoder,
+                                 args.quality, args.force, mode=args.mode):
                 failed.append(video_id)
 
     if failed:
