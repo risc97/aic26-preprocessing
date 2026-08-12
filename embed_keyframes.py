@@ -1,8 +1,31 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import tempfile
 from pathlib import Path
+
+# PATCH long dir
+def _shorten_tmpdir(max_len: int = 60) -> None:
+    """Keep TMPDIR short enough for the dataloader workers' AF_UNIX sockets.
+
+    nix-shell points TMPDIR at a long per-shell directory. multiprocessing puts
+    its listener socket at <tmpdir>/pymp-XXXXXXXX/listener-XXXXXXXX, and AF_UNIX
+    paths cap at 108 bytes, so a long TMPDIR fails with "AF_UNIX path too long"
+    as soon as num_workers > 0.
+    """
+    if len(tempfile.gettempdir()) <= max_len:
+        return
+    for candidate in ("/tmp", "/var/tmp"):
+        if os.path.isdir(candidate) and os.access(candidate, os.W_OK):
+            for var in ("TMPDIR", "TEMP", "TMP", "TEMPDIR"):
+                os.environ[var] = candidate
+            tempfile.tempdir = candidate
+            return
+
+
+_shorten_tmpdir()
 
 from db import MetadataDatabase
 from models import C2Lip

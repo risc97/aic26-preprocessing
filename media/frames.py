@@ -29,13 +29,14 @@ def _run_ffmpeg(video_path: Path, frame_numbers: list[int], codec: str,
 
 def extract_frames(video_path: Path, frame_numbers: list[int], out_dir: Path,
                    decoder: str, quality: int, clean_overlay: bool = False) -> list[Path]:
-    """Extract all frames with one ffmpeg call, GPU decoder with CPU fallback."""
+    """Extract all frames with one ffmpeg call, and clean overlay if need"""
     temp_dir = Path(tempfile.mkdtemp(prefix=f"keyframes_{video_path.stem}_"))
     try:
         produced = _run_ffmpeg(video_path, frame_numbers, decoder, quality, temp_dir)
         if not produced and decoder != "libdav1d":
             shutil.rmtree(temp_dir, ignore_errors=True)
             temp_dir = Path(tempfile.mkdtemp(prefix=f"keyframes_{video_path.stem}_"))
+            # Fall back to CPU
             produced = _run_ffmpeg(video_path, frame_numbers, "libdav1d", quality, temp_dir)
             if produced:
                 print(f"    (fell back to libdav1d)")
