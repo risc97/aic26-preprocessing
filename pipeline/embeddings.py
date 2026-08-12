@@ -7,6 +7,7 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
+from config import resolve_stored_path
 from db import MetadataDatabase
 from models import C2Lip, EMBED_DIM
 from pipeline.ids import vector_id
@@ -55,7 +56,8 @@ def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Pa
         print(f"[{video_id}] shard already complete ({len(keyframes)} vectors), skipping")
         return True
 
-    missing = [k.image_path for k in keyframes if not Path(k.image_path).exists()]
+    images = [resolve_stored_path(k.image_path) for k in keyframes]
+    missing = [p for p in images if not p.exists()]
     if missing:
         print(f"[{video_id}] FAILED: {len(missing)} keyframe image(s) missing, "
               f"first is {missing[0]}")
@@ -63,7 +65,7 @@ def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Pa
 
     print(f"[{video_id}] encoding {len(keyframes)} keyframes...")
     loader = DataLoader(
-        KeyframeDataset([k.image_path for k in keyframes], model.preprocess),
+        KeyframeDataset([str(p) for p in images], model.preprocess),
         batch_size=batch_size, num_workers=num_workers, shuffle=False,
         pin_memory=True, drop_last=False,
     )

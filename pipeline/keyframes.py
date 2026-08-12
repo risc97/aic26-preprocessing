@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from config import stored_path
 from db import MetadataDatabase
 from media.frames import extract_frames
 from media.preprocess import has_overlay
@@ -49,7 +50,7 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
     note = ", blacking out overlays" if clean_overlay else ""
     print(f"[{video_id}] extracting {len(kept)} keyframes ({fps:.3f} fps){note}...")
 
-    db.videos.upsert(video_id, str(video_path), duration_ms, fps)
+    db.videos.upsert(video_id, stored_path(video_path), duration_ms, fps)
     db.keyframes.delete_by_video(video_id)
     db.segments.delete_by_video(video_id)
 
@@ -65,7 +66,9 @@ def process_video(db: MetadataDatabase, video_id: str, video_path: Path,
 
     segments = db.segments.create_many(video_id, [span for span, _ in kept])
     db.keyframes.create_many([
-        (video_id, image.stem, f, int(round(f / fps * 1000)), str(image), segment.segment_id) for (_, f), segment, image in zip(kept, segments, images)
+        (video_id, image.stem, f, int(round(f / fps * 1000)), stored_path(image),
+         segment.segment_id)
+        for (_, f), segment, image in zip(kept, segments, images)
     ])
 
     print(f"[{video_id}] saved {len(images)} keyframes and {len(segments)} segments")

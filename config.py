@@ -11,3 +11,21 @@ SCENES_DIR = DATA_PATH / "staging"
 KEYFRAMES_DIR = DATA_PATH / "keyframes"
 MEDIA_INFO_DIR = DATA_PATH / "media-info"
 INDEX_PATH = DATA_PATH / "index" / "keyframes.tvim"
+
+
+def stored_path(path: str | Path) -> str:
+    """Convert a path to be relative to DATA_PATH.
+    For example:
+    DATA_PATH = Path('/home/user/project/data')
+    stored_path(/home/user/project/data/keyframes/001.jpg) = keyframes/001.jpg
+    """
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(DATA_PATH))
+    except ValueError:
+        return str(resolved)
+
+
+def resolve_stored_path(stored: str | Path) -> Path:
+    """Restore a stored path to an absolute path."""
+    return (DATA_PATH / stored).resolve()
