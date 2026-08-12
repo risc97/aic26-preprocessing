@@ -28,7 +28,7 @@ def _shorten_tmpdir(max_len: int = 60) -> None:
 _shorten_tmpdir()
 
 from db import MetadataDatabase
-from models import C2Lip
+from models import MODEL_CHOICES, VARIANT, VARIANTS, load_encoder
 from pipeline.embeddings import embed_video
 from config import DB_PATH, SHARD_DIR, CKPT_PATH
 
@@ -36,9 +36,17 @@ from config import DB_PATH, SHARD_DIR, CKPT_PATH
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=DB_PATH)
-    parser.add_argument("--shard-dir", type=Path, default=SHARD_DIR)
-    parser.add_argument("--ckpt", type=Path, default=CKPT_PATH,
-                        help="C2LIP checkpoint from the authors")
+    parser.add_argument("--model", choices=MODEL_CHOICES, default="c2lip",
+                        help="encoder to embed with")
+    parser.add_argument("--variant", default=VARIANT, choices=VARIANTS,
+                        metavar="NAME",
+                        help=f"siglip2 only: open_clip config (default {VARIANT})")
+    parser.add_argument("--shard-dir", type=Path,
+                        help="default: <SHARD_DIR>/<model>, so models never overwrite each other's shards")
+    parser.add_argument("--ckpt", type=Path,
+                        help="c2lip: the authors' checkpoint (default "
+                             f"{CKPT_PATH}). siglip2: local weights instead of "
+                             "the 'webli' hub tag")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8,
@@ -51,8 +59,12 @@ def main():
                         help="re-encode videos that already have a complete shard")
     args = parser.parse_args()
 
-    if not args.ckpt.exists():
-        print(f"missing checkpoint at {args.ckpt}")
+    ckpt = args.ckpt
+    if args.model == "c2lip" and ckpt is None:
+        ckpt = CKPT_PATH
+    # siglip2 without --ckpt pulls the 'webli' weights from the hub
+    if ckpt is not None and not ckpt.exists():
+        print(f"missing checkpoint at {ckpt}")
         return 1
 
     with MetadataDatabase(args.db) as db:
@@ -66,12 +78,17 @@ def main():
             print(f"no videos to encode in {args.db}")
             return 1
 
-        print(f"loading C2LIP from {args.ckpt} onto {args.device}...")
-        model = C2Lip(args.ckpt, device=args.device)
+        source = ckpt if ckpt is not None else "the 'webli' hub weights"
+        print(f"loading {args.model} from {source} onto {args.device}...")
+        model = load_encoder(args.model, ckpt=ckpt, variant=args.variant,
+                             device=args.device)
+
+        shard_dir = args.shard_dir or SHARD_DIR / model.tag
+        print(f"{model.model_name}: dim {model.embed_dim}, shards -> {shard_dir}")
 
         failed = []
         for video_id in video_ids:
-            if not embed_video(db, model, video_id, args.shard_dir,
+            if not embed_video(db, model, video_id, shard_dir,
                                args.batch_size, args.workers, args.force):
                 failed.append(video_id)
 

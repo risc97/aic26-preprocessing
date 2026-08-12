@@ -53,7 +53,8 @@ python init_db.py
 python extract_keyframes.py
 
 # embed keyframes -> data/embeddings/
-python embed_keyframes.py
+python embed_keyframes.py --model c2lip
+python embed_keyframes.py --model siglip2 --batch-size 32
 # build data/index/keyframes.tvim
 python build_index.py
 ```

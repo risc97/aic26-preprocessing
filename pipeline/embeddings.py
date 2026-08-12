@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from config import resolve_stored_path
 from db import MetadataDatabase
-from models import C2Lip, EMBED_DIM
+from models import OpenClipEncoder
 from pipeline.ids import vector_id
 
 
@@ -27,12 +27,12 @@ class KeyframeDataset(Dataset):
 
 
 def shard_paths(shard_dir: Path, video_id: str) -> tuple[Path, Path]:
-    # <shard_dir>/<video_id>.npy      float16 (n, 768), L2-normalised
+    # <shard_dir>/<video_id>.npy      float16 (n, dim), L2-normalised
     # <shard_dir>/<video_id>.ids.npy  int64   (n,)      packed vector id per row
     return shard_dir / f"{video_id}.npy", shard_dir / f"{video_id}.ids.npy"
 
 
-def check_complete_shard(shard_dir: Path, video_id: str, expected: int) -> bool:
+def check_complete_shard(shard_dir: Path, video_id: str, expected: int, dim: int) -> bool:
     vec_path, ids_path = shard_paths(shard_dir, video_id)
     if not (vec_path.exists() and ids_path.exists()):
         return False
@@ -41,10 +41,10 @@ def check_complete_shard(shard_dir: Path, video_id: str, expected: int) -> bool:
         ids = np.load(ids_path, mmap_mode="r")
     except (ValueError, OSError):
         return False
-    return vecs.shape == (expected, EMBED_DIM) and ids.shape == (expected,)
+    return vecs.shape == (expected, dim) and ids.shape == (expected,)
 
 
-def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Path,
+def embed_video(db: MetadataDatabase, model: OpenClipEncoder, video_id: str, shard_dir: Path,
                 batch_size: int, num_workers: int, force: bool) -> bool:
     """Encode one video's keyframes into a shard"""
     keyframes = db.keyframes.list_by_video(video_id)
@@ -52,7 +52,7 @@ def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Pa
         print(f"[{video_id}] no keyframes in db, skipping")
         return False
 
-    if not force and check_complete_shard(shard_dir, video_id, len(keyframes)):
+    if not force and check_complete_shard(shard_dir, video_id, len(keyframes), model.embed_dim):
         print(f"[{video_id}] shard already complete ({len(keyframes)} vectors), skipping")
         return True
 
@@ -70,7 +70,7 @@ def embed_video(db: MetadataDatabase, model: C2Lip, video_id: str, shard_dir: Pa
         pin_memory=True, drop_last=False,
     )
 
-    out = np.empty((len(keyframes), EMBED_DIM), dtype=np.float16)
+    out = np.empty((len(keyframes), model.embed_dim), dtype=np.float16)
     row = 0
     for batch in loader:
         vecs = model.encode_images(batch)
