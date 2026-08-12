@@ -5,10 +5,7 @@ import sys
 from pathlib import Path
 
 from pipeline.index import build_index
-
-SHARD_DIR = Path("data/embeddings")
-INDEX_PATH = Path("data/index/keyframes.tvim")
-
+from config import SHARD_DIR, INDEX_PATH
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

@@ -6,17 +6,16 @@ from pathlib import Path
 
 from db import MetadataDatabase
 from pipeline.keyframes import process_video
-
-VIDEOS_DIR = Path("data/videos")
-SCENES_DIR = Path("data/staging")
-KEYFRAMES_DIR = Path("data/keyframes")
-MEDIA_INFO_DIR = Path("data/media-info")
-DB_PATH = Path("data/metadata.db")
+from config import VIDEOS_DIR, SCENES_DIR, KEYFRAMES_DIR, MEDIA_INFO_DIR, DB_PATH
 
 VIDEO_SUFFIX = ".webm"
 SCENES_SUFFIX = ".scenes.txt"
 MEDIA_INFO_SUFFIX = ".json"
+
 DECODER = "libdav1d"  # CPU AV1 decode; containers rarely expose NVDEC
+import torch
+if torch.cuda.is_available():
+    DECODER = "av1_cuvid"  # GPU AV1 decode
 
 
 def main():
@@ -27,7 +26,7 @@ def main():
     parser.add_argument("--media-info-dir", type=Path, default=MEDIA_INFO_DIR)
     parser.add_argument("--db", type=Path, default=DB_PATH)
     parser.add_argument("--decoder", default=DECODER,
-                        help=f"ffmpeg decoder (default: {DECODER}; use 'libdav1d' for CPU)")
+                        help=f"ffmpeg decoder")
     parser.add_argument("--quality", type=int, default=2,
                         help="ffmpeg JPEG quality, 2 (best) to 31 (worst)")
     parser.add_argument("--video", action="append", metavar="VIDEO_ID",
@@ -59,7 +58,7 @@ def main():
                 continue
             media_info_file = args.media_info_dir / f"{video_id}{MEDIA_INFO_SUFFIX}"
             if not process_video(db, video_id, video_path, scenes_file, media_info_file,
-                                 args.keyframes_dir / args.mode, args.decoder,
+                                 args.keyframes_dir, args.decoder,
                                  args.quality, args.force, mode=args.mode):
                 failed.append(video_id)
 

@@ -8,8 +8,7 @@ import sys
 from pathlib import Path
 
 from db import MetadataDatabase
-
-DB_PATH = Path("data/metadata.db")
+from config import DB_PATH
 
 
 def main() -> int:

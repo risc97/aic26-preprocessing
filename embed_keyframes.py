@@ -30,10 +30,7 @@ _shorten_tmpdir()
 from db import MetadataDatabase
 from models import C2Lip
 from pipeline.embeddings import embed_video
-
-DB_PATH = Path("data/metadata.db")
-SHARD_DIR = Path("data/embeddings")
-CKPT_PATH = Path("data/checkpoints/c2lip_npc_xac.pt")
+from config import DB_PATH, SHARD_DIR, CKPT_PATH
 
 
 def main():
