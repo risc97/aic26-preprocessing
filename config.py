@@ -16,8 +16,8 @@ INDEX_PATH = DATA_PATH / "index"
 def stored_path(path: str | Path) -> str:
     """Convert a path to be relative to DATA_PATH.
     For example:
-    DATA_PATH = Path('/home/user/project/data')
-    stored_path(/home/user/project/data/keyframes/001.jpg) = keyframes/001.jpg
+    DATA_PATH = Path('/workspace/data')
+    stored_path(/workspace/data/keyframes/001.jpg) = keyframes/001.jpg
     """
     resolved = Path(path).resolve()
     try:

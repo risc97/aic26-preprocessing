@@ -10,10 +10,10 @@ from config import SHARD_DIR, INDEX_PATH
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", choices=MODEL_CHOICES, default="c2lip",
+    parser.add_argument("--model", choices=list(MODEL_CHOICES), default="siglip",
                         help="which encoder's shards to index")
     parser.add_argument("--shard-dir", type=Path, help="default: <SHARD_DIR>/<model>")
-    parser.add_argument("--index", type=Path, help="default: <INDEX_PATH>/<model>.tvim")
+    parser.add_argument("--index", type=Path, help="default: <INDEX_PATH>/<model>-keyframes.tvim")
     parser.add_argument("--bit-width", type=int, default=4, choices=(2, 3, 4),
                         help="4 is the accuracy default; 2 halves the memory")
     args = parser.parse_args()

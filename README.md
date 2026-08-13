@@ -1,72 +1,75 @@
-# AIC26 Video Search
+# [HCMC AIC 2026] Data preprocessing
 
-## Overview
-This project include multiple repositories:
-- [aic26-preprcessing](https://github.com/risc97/aic26-preprocessing): Turn raw videos into keyframes, embeddings, and a search index
-- [aic26-backend](https://github.com/risc97/aic26-backend): FastAPI server that searches the index and serves keyframes and videos
+The preprocessing pipeline used by to process video data. The pipeline cuts video data into *keyframes*, then uses them to produce semantic embeddings (from multiple embedding models) and various other additional data types.
 
-## Project structure
+This pipeline is a component of a larger retrieval system, and its products would be directly used by the backend: [[HCMC AIC 2026] Backend](https://github.com/risc97/aic26-backend).
 
-You may organize the project structure like this:
-```
-aic26/
-├── data/
-│   ├── videos/            # L21_V001.webm ...
-│   ├── media-info/        # L21_V001.json ...
-│   ├── staging/           # L21_V001.scenes.txt ... (from TransNetV2)
-│   ├── keyframes/         # L21_V001/0001.jpg ...
-│   ├── embeddings/        # embedding shards
-│   ├── index/             # embedding index
-│   ├── checkpoints/       # c2lip.pt
-│   └── metadata.db
-├── aic26-preprocessing/
-└── aic26-backend/
-```
+## Requirements
 
-## Install
+- A Python enviroment, preferrably Python 3.10 or above. Using virtual environment is recommended.
+- [FFmpeg](https://www.ffmpeg.org/)
+- [TransNetV2 package](https://github.com/YangTuanAnh/transnetv2_pytorch)
+  - A script can be written to manually run TransNetV2 instead but using the package is recommended for convenience.
+- Everything within `requirements.txt`.
+  - Make sure all of them are installed by running `pip install -r requirements.txt`.
 
-```bash
-mkdir aic26 && cd aic26
-git clone https://github.com/risc97/aic26-preprocessing.git
-git clone https://github.com/risc97/aic26-backend.git
-cd aic26-preprocessing
-```
+## Data preparation
 
-Set up the environment:
-
-- **NixOS**: run `nix-shell`. It creates `.venv`, installs `requirements.txt`, and installs TransNetV2.
-- **Other**: make a Python 3.10 venv, `pip install -r requirements.txt`, install `ffmpeg`, and install [transnetv2_pytorch](https://github.com/YangTuanAnh/transnetv2_pytorch).
-
-## Build the data
-
-Run these from `aic26-preprocessing/`, in order:
-
-```bash
-# download the data from Organizer's source (maybe unavailable)
-./download_data.sh
-
-# find scene boundary
-transnetv2_pytorch ../data/videos/ -o ../data/staging/
-# create metadata.db
-python init_db.py
-# extract keyframe and save infomation to db
-python extract_keyframes.py
-
-# embed keyframes -> data/embeddings/
-python embed_keyframes.py --model c2lip
-python embed_keyframes.py --model siglip2 --batch-size 32
-# build data/index/keyframes.tvim
-python build_index.py
-```
-
-Some utils command that you might need:
-
-```bash
-# clean the C2LIP weight -> checkpoints/c2lip.pt
-python strip_checkpoint.py
+The video data should be organized as such:
 
 ```
+data/
+├── videos/            # Videos, in this exact directory
+│   ├── VID_001.mp4
+│   ├── VID_097.webm
+│   └── ...
+├── media-info/        # JSON metadata files, should match the clip's name
+│   ├── VID_001.json
+│   ├── VID_097.json
+│   └── ...
+└── checkpoints/       # A custom path could be passed into the script instead
+aic26-preprocessing/
+```
 
-## Run the backend
+Now the data can be processed by following the section below. After running the pipeline you should see additional directories storing the products of the process:
 
-Once the index exists, follow the [aic26-backend](https://github.com/risc97/aic26-backend) README. It serves `POST /query` for search, plus endpoints for keyframe images and videos.
+```
+data/
+├── videos/            # Videos
+├── media-info/        # Metadata
+├── staging/           # Keyframe timestamps in text files (VID_001.scenes.txt)
+├── keyframes/         # Keyframes, organized by folders
+│   ├── VID_001/
+│   │   ├── 0001.jpeg
+│   │   └── ...
+│   └── ...
+├── embeddings/        # Embedding shards
+├── index/             # Embedding indices
+├── checkpoints/       # Checkpoints
+└── metadata.db
+aic26-preprocessing/
+```
+
+## Running the pipeline
+
+First start by setting up the environment:
+
+- **NixOS**: run `nix-shell`. It automatically sets up a virtual environment and installs all requirements.
+- **Other**: Make sure all dependencies in the [requirements](#requirements) are installed, then run `pip install -r requirements.txt` in your Python environment.
+
+Should you want to use the competition's data instead of your own, download them using `./download_data.sh`. Note that the links might expire and the data could no longer be available. Don't forget to [prepare the data](#data-preparation) first.
+
+Now move into this repository's directory and run these commands in order:
+- `transnetv2_pytorch ../data/videos/ -o ../data/staging/` - runs keyframe detection
+- `python init_db.py` - starts database to store metadata
+- `python extract_keyframes.py` - extracts keyframes from detection results
+- `python embed_keyframes.py` - embeds the extracted keyframes
+- `python build_index.py` - builds indices for the embeddings
+
+Each of the above scripts have their own arguments, which can be custom-passed and can be shown by running `<script-name> --help`. Specifically, it is highly recommended to view the arguments of `embed_keyframes.py` to see how one can pick a preferred embedding model to use.
+
+## What's next?
+
+The project is structured in such a manner that allows the user to extend their use to other models outside of the project's scope. One could add their own model by inheriting the base encoder in `models/base.py` and implement the model's class.
+
+Once the indices building is done, see [[HCMC AIC 2026] Backend](https://github.com/risc97/aic26-backend) on how to use them.

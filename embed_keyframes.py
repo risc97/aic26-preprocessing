@@ -28,25 +28,23 @@ def _shorten_tmpdir(max_len: int = 60) -> None:
 _shorten_tmpdir()
 
 from db import MetadataDatabase
-from models import MODEL_CHOICES, VARIANT, VARIANTS, load_encoder
+from models import MODEL_CHOICES
 from pipeline.embeddings import embed_video
 from config import DB_PATH, SHARD_DIR, CKPT_PATH
 
+MODEL = "siglip"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=DB_PATH)
-    parser.add_argument("--model", choices=MODEL_CHOICES, default="c2lip",
+    parser.add_argument("--model", type=str, default=MODEL,
+                        choices=list(MODEL_CHOICES),
                         help="encoder to embed with")
-    parser.add_argument("--variant", default=VARIANT, choices=VARIANTS,
-                        metavar="NAME",
-                        help=f"siglip2 only: open_clip config (default {VARIANT})")
     parser.add_argument("--shard-dir", type=Path,
-                        help="default: <SHARD_DIR>/<model>, so models never overwrite each other's shards")
-    parser.add_argument("--ckpt", type=Path,
-                        help="c2lip: the authors' checkpoint (default "
-                             f"{CKPT_PATH}). siglip2: local weights instead of "
-                             "the 'webli' hub tag")
+                        help="default: <SHARD_DIR>/<model>, so models never "
+                             "overwrite each other's shards")
+    parser.add_argument("--ckpt", type=Path, default=None,
+                        help="path to model checkpoint; omit to use source pretrained weights")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8,
@@ -60,12 +58,14 @@ def main():
     args = parser.parse_args()
 
     ckpt = args.ckpt
-    if args.model == "c2lip" and ckpt is None:
+    # siglip needs its fine-tuned checkpoint; auto-apply it when omitted
+    if ckpt is None and args.model == "siglip" and CKPT_PATH.exists():
         ckpt = CKPT_PATH
-    # siglip2 without --ckpt pulls the 'webli' weights from the hub
     if ckpt is not None and not ckpt.exists():
-        print(f"missing checkpoint at {ckpt}")
-        return 1
+        print(f"Checkpoint not found at {ckpt}, falling back to source pretrained weights")
+        ckpt = None
+
+    shard_dir = args.shard_dir or SHARD_DIR / args.model
 
     with MetadataDatabase(args.db) as db:
         video_ids = [v.video_id for v in db.videos.list_all(limit=10**9)]
@@ -75,16 +75,18 @@ def main():
         if args.limit:
             video_ids = video_ids[:args.limit]
         if not video_ids:
-            print(f"no videos to encode in {args.db}")
+            print(f"No videos to encode in {args.db}")
             return 1
 
-        source = ckpt if ckpt is not None else "the 'webli' hub weights"
-        print(f"loading {args.model} from {source} onto {args.device}...")
-        model = load_encoder(args.model, ckpt=ckpt, variant=args.variant,
-                             device=args.device)
-
-        shard_dir = args.shard_dir or SHARD_DIR / model.tag
-        print(f"{model.model_name}: dim {model.embed_dim}, shards -> {shard_dir}")
+        print(f"loading {args.model} model"
+              f"{f' from {ckpt}' if ckpt else ' (source pretrained)'}"
+              f" on {args.device}")
+        model_cls = MODEL_CHOICES[args.model]
+        try:
+            model = model_cls(ckpt, device=args.device)
+        except ValueError as e:
+            print(f"Failed to load {args.model}: {e}")
+            return 1
 
         failed = []
         for video_id in video_ids:

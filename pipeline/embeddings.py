@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from config import resolve_stored_path
 from db import MetadataDatabase
-from models import OpenClipEncoder
+from models import Encoder
 from pipeline.ids import vector_id
 
 
@@ -44,7 +44,7 @@ def check_complete_shard(shard_dir: Path, video_id: str, expected: int, dim: int
     return vecs.shape == (expected, dim) and ids.shape == (expected,)
 
 
-def embed_video(db: MetadataDatabase, model: OpenClipEncoder, video_id: str, shard_dir: Path,
+def embed_video(db: MetadataDatabase, model: Encoder, video_id: str, shard_dir: Path,
                 batch_size: int, num_workers: int, force: bool) -> bool:
     """Encode one video's keyframes into a shard"""
     keyframes = db.keyframes.list_by_video(video_id)
@@ -52,7 +52,8 @@ def embed_video(db: MetadataDatabase, model: OpenClipEncoder, video_id: str, sha
         print(f"[{video_id}] no keyframes in db, skipping")
         return False
 
-    if not force and check_complete_shard(shard_dir, video_id, len(keyframes), model.embed_dim):
+    if not force and check_complete_shard(shard_dir, video_id, len(keyframes),
+                                          model.EMBED_DIM):
         print(f"[{video_id}] shard already complete ({len(keyframes)} vectors), skipping")
         return True
 
@@ -70,7 +71,7 @@ def embed_video(db: MetadataDatabase, model: OpenClipEncoder, video_id: str, sha
         pin_memory=True, drop_last=False,
     )
 
-    out = np.empty((len(keyframes), model.embed_dim), dtype=np.float16)
+    out = np.empty((len(keyframes), model.EMBED_DIM), dtype=np.float16)
     row = 0
     for batch in loader:
         vecs = model.encode_images(batch)
