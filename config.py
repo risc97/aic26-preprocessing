@@ -10,7 +10,7 @@ VIDEOS_DIR = DATA_PATH / "videos"
 SCENES_DIR = DATA_PATH / "staging"
 KEYFRAMES_DIR = DATA_PATH / "keyframes"
 MEDIA_INFO_DIR = DATA_PATH / "media-info"
-INDEX_PATH = DATA_PATH / "index" / "keyframes.tvim"
+INDEX_PATH = DATA_PATH / "index"
 
 
 def stored_path(path: str | Path) -> str:

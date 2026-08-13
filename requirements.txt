@@ -1,15 +1,25 @@
+fastapi[standard]
+uvicorn[standard]
+pydantic-settings
+
+huggingface_hub
 ffmpeg-python
+gdown
 torch
 torchvision
 pillow
 numpy
 pandas
 tqdm
+kaggle
 opencv-python-headless
+pyarrow
+fastparquet
 
 # C2LIP encoder
 open_clip_torch>=2.31
 timm>=1.0.15
+transformers
 sentencepiece
 huggingface_hub
 
