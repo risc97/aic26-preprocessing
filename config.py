@@ -12,6 +12,8 @@ KEYFRAMES_DIR = DATA_PATH / "keyframes"
 MEDIA_INFO_DIR = DATA_PATH / "media-info"
 INDEX_PATH = DATA_PATH / "index"
 
+KEYFRAME_MODE = "mid"
+
 
 def stored_path(path: str | Path) -> str:
     """Convert a path to be relative to DATA_PATH.

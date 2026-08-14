@@ -7,8 +7,7 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from config import resolve_stored_path
-from db import MetadataDatabase
+from media.keyframes import find_keyframes
 from models import Encoder
 from pipeline.ids import vector_id
 
@@ -44,12 +43,12 @@ def check_complete_shard(shard_dir: Path, video_id: str, expected: int, dim: int
     return vecs.shape == (expected, dim) and ids.shape == (expected,)
 
 
-def embed_video(db: MetadataDatabase, model: Encoder, video_id: str, shard_dir: Path,
+def embed_video(model: Encoder, video_id: str, keyframes_dir: Path, shard_dir: Path,
                 batch_size: int, num_workers: int, force: bool) -> bool:
     """Encode one video's keyframes into a shard"""
-    keyframes = db.keyframes.list_by_video(video_id)
+    keyframes = find_keyframes(keyframes_dir, video_id)
     if not keyframes:
-        print(f"[{video_id}] no keyframes in db, skipping")
+        print(f"[{video_id}] no keyframes in {keyframes_dir / video_id}, skipping")
         return False
 
     if not force and check_complete_shard(shard_dir, video_id, len(keyframes),
@@ -57,16 +56,9 @@ def embed_video(db: MetadataDatabase, model: Encoder, video_id: str, shard_dir: 
         print(f"[{video_id}] shard already complete ({len(keyframes)} vectors), skipping")
         return True
 
-    images = [resolve_stored_path(k.image_path) for k in keyframes]
-    missing = [p for p in images if not p.exists()]
-    if missing:
-        print(f"[{video_id}] FAILED: {len(missing)} keyframe image(s) missing, "
-              f"first is {missing[0]}")
-        return False
-
     print(f"[{video_id}] encoding {len(keyframes)} keyframes...")
     loader = DataLoader(
-        KeyframeDataset([str(p) for p in images], model.preprocess),
+        KeyframeDataset([str(p) for p in keyframes], model.preprocess),
         batch_size=batch_size, num_workers=num_workers, shuffle=False,
         pin_memory=True, drop_last=False,
     )
@@ -79,7 +71,7 @@ def embed_video(db: MetadataDatabase, model: Encoder, video_id: str, shard_dir: 
         row += len(vecs)
     assert row == len(keyframes), f"encoded {row} of {len(keyframes)}"
 
-    ids = np.array([vector_id(k.video_id, k.keyframe_id) for k in keyframes], dtype=np.int64)
+    ids = np.array([vector_id(video_id, p.stem) for p in keyframes], dtype=np.int64)
     vec_path, ids_path = shard_paths(shard_dir, video_id)
     shard_dir.mkdir(parents=True, exist_ok=True)
     # write to .tmp then rename so a crash never create a broken shard

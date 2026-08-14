@@ -27,16 +27,17 @@ def _shorten_tmpdir(max_len: int = 60) -> None:
 
 _shorten_tmpdir()
 
-from db import MetadataDatabase
+from media.videos import list_video_ids
 from models import MODEL_CHOICES
 from pipeline.embeddings import embed_video
-from config import DB_PATH, SHARD_DIR, CKPT_PATH
+from config import VIDEOS_DIR, KEYFRAMES_DIR, SHARD_DIR, CKPT_PATH
 
 MODEL = "siglip"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", type=Path, default=DB_PATH)
+    parser.add_argument("--videos-dir", type=Path, default=VIDEOS_DIR)
+    parser.add_argument("--keyframes-dir", type=Path, default=KEYFRAMES_DIR)
     parser.add_argument("--model", type=str, default=MODEL,
                         choices=list(MODEL_CHOICES),
                         help="encoder to embed with")
@@ -67,32 +68,31 @@ def main():
 
     shard_dir = args.shard_dir or SHARD_DIR / args.model
 
-    with MetadataDatabase(args.db) as db:
-        video_ids = [v.video_id for v in db.videos.list_all(limit=10**9)]
-        if args.video:
-            wanted = set(args.video)
-            video_ids = [v for v in video_ids if v in wanted]
-        if args.limit:
-            video_ids = video_ids[:args.limit]
-        if not video_ids:
-            print(f"No videos to encode in {args.db}")
-            return 1
+    video_ids = list_video_ids(args.videos_dir)
+    if args.video:
+        wanted = set(args.video)
+        video_ids = [v for v in video_ids if v in wanted]
+    if args.limit:
+        video_ids = video_ids[:args.limit]
+    if not video_ids:
+        print(f"No videos to encode in {args.videos_dir}")
+        return 1
 
-        print(f"loading {args.model} model"
-              f"{f' from {ckpt}' if ckpt else ' (source pretrained)'}"
-              f" on {args.device}")
-        model_cls = MODEL_CHOICES[args.model]
-        try:
-            model = model_cls(ckpt, device=args.device)
-        except ValueError as e:
-            print(f"Failed to load {args.model}: {e}")
-            return 1
+    print(f"loading {args.model} model"
+          f"{f' from {ckpt}' if ckpt else ' (source pretrained)'}"
+          f" on {args.device}")
+    model_cls = MODEL_CHOICES[args.model]
+    try:
+        model = model_cls(ckpt, device=args.device)
+    except ValueError as e:
+        print(f"Failed to load {args.model}: {e}")
+        return 1
 
-        failed = []
-        for video_id in video_ids:
-            if not embed_video(db, model, video_id, shard_dir,
-                               args.batch_size, args.workers, args.force):
-                failed.append(video_id)
+    failed = []
+    for video_id in video_ids:
+        if not embed_video(model, video_id, args.keyframes_dir, shard_dir,
+                           args.batch_size, args.workers, args.force):
+            failed.append(video_id)
 
     if failed:
         print(f"\n{len(failed)} video(s) failed: {', '.join(failed)}")
