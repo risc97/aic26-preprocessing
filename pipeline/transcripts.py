@@ -19,7 +19,7 @@ def embed_transcript(model: Gte, csv_path: Path, batch_size: int, shard_dir: Pat
     if not force and check_complete_shard(shard_dir, video_id, len(rows), model.EMBED_DIM):
         print(f"[{video_id}] shard already complete ({len(rows)} vectors), skipping")
         return True
-    texts = [r["text"] for r in rows]
+    texts = [r["text"] if r["text"].strip() else " " for r in rows]
     print(f"[{video_id}] encoding {len(texts)} transcripts")
     out = np.empty((len(texts), model.EMBED_DIM), dtype = np.float16)
     for i in range(0, len(texts), batch_size):
@@ -28,7 +28,7 @@ def embed_transcript(model: Gte, csv_path: Path, batch_size: int, shard_dir: Pat
 
     ids = np.array([vector_id(video_id, f"{i:04d}") for i in range(len(rows))], dtype=np.int64)
 
-    vec_path, ids_path = shard_paths()
+    vec_path, ids_path = shard_paths(shard_dir, video_id)
     shard_dir.mkdir(parents=True, exist_ok=True)
     for path, array in ((vec_path, out), (ids_path, ids)):
         tmp = path.with_suffix(path.suffix + ".tmp")

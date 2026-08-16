@@ -19,7 +19,7 @@ fastparquet
 # C2LIP encoder
 open_clip_torch>=2.31
 timm>=1.0.15
-transformers
+transformers<5
 sentencepiece
 
 # vector index
