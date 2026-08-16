@@ -24,6 +24,7 @@ pkgs.mkShell {
     ngrok
     wget
     ffmpeg
+    parallel
   ];
 
   shellHook = ''
