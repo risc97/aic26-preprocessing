@@ -10,8 +10,8 @@ def read_rows(path: Path):
     with open(path, newline="",encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
-def embed_transcript(model: Gte, csv_path: Path, force: bool, shard_dir: Path, batch_size: int):
-    video_id = csv_path.sem
+def embed_transcript(model: Gte, csv_path: Path, batch_size: int, shard_dir: Path, force: bool):
+    video_id = csv_path.stem
     rows = read_rows(csv_path)
     if not rows:
         print(f"[{video_id}] empty transcript, skipping")

@@ -25,7 +25,7 @@ def main():
     args = parser.parse_args()
 
     shard_dir = args.shard_dir or SHARD_DIR / MODEL_TAG
-    csv_paths = sorted(args.transcript_dir.glob("*.csv"))
+    csv_paths = sorted(args.transcripts_dir.glob("*.csv"))
     if args.video:
         wanted = set(args.video)
         csv_paths = [p for p in csv_paths if p.stem in wanted]
@@ -37,7 +37,7 @@ def main():
 
     failed = []
     for csv_path in csv_paths:
-        if not embed_transcript(model, csv_path, shard_dir, args.batch_size, args.force):
+        if not embed_transcript(model, csv_path, args.batch_size, shard_dir, args.force):
             failed.append(csv_path.stem)
 
     if failed:
