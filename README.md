@@ -45,6 +45,7 @@ data/
 │   └── ...
 ├── embeddings/        # Embedding shards
 ├── index/             # Embedding indices
+├── ocr/               # Per-video OCR text (VID_001.json)
 ├── checkpoints/       # Checkpoints
 └── metadata.db
 aic26-preprocessing/
@@ -64,6 +65,7 @@ Now move into this repository's directory and run these commands in order:
 - `python init_db.py` - starts database to store metadata
 - `python extract_keyframes.py` - extracts keyframes from detection results
 - `python embed_keyframes.py` - embeds the extracted keyframes
+- `python ocr_keyframes.py` - OCRs the extracted keyframes
 - `python build_index.py` - builds indices for the embeddings
 
 Each of the above scripts have their own arguments, which can be custom-passed and can be shown by running `<script-name> --help`. Specifically, it is highly recommended to view the arguments of `embed_keyframes.py` to see how one can pick a preferred embedding model to use.

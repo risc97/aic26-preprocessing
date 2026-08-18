@@ -32,3 +32,5 @@ sherpa-onnx-core
 --find-links https://csukuangfj.github.io/kaldifeat/cuda.html
 k2==1.24.4.dev20260710+cuda13.0.torch2.13.0
 kaldifeat==1.25.5.dev20260710+cuda13.0.torch2.13.0
+paddleocr
+vietocr
