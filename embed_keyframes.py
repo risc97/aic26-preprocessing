@@ -50,7 +50,7 @@ def main():
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8,
                         help="dataloader workers for JPEG decode + resize")
-    parser.add_argument("--video", action="append", metavar="VIDEO_ID",
+    parser.add_argument("--video", nargs='*', metavar="VIDEO_ID",
                         help="only encode this video id (repeatable)")
     parser.add_argument("--limit", type=int,
                         help="stop after N videos (smoke test)")

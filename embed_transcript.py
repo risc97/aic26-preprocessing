@@ -18,7 +18,7 @@ def main():
                         help=f"default: <SHARD_DIR>/{MODEL_TAG}")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--video", action="append", metavar="VIDEO_ID",
+    parser.add_argument("--video", nargs='*', metavar="VIDEO_ID",
                         help="only encode this video id")
     parser.add_argument("--force", action="store_true",
                         help="re-encode videos that already have a complete shard")

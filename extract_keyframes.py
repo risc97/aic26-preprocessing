@@ -27,7 +27,7 @@ def main():
                         help=f"ffmpeg decoder")
     parser.add_argument("--quality", type=int, default=2,
                         help="ffmpeg JPEG quality, 2 (best) to 31 (worst)")
-    parser.add_argument("--video", action="append", metavar="VIDEO_ID",
+    parser.add_argument("--video", nargs='*', metavar="VIDEO_ID",
                         help="only process this video id (repeatable)")
     parser.add_argument("--mode", choices=("left", "mid", "right"),
                         default=KEYFRAME_MODE,
