@@ -19,7 +19,7 @@ from media.scenes import read_scenes
 SCENES_SUFFIX = ".scenes.txt"
 ORIGIN_SUFFIX = ".scenes.origin.txt"
 SPANS_FILE = SCENES_DIR / "ad_spans.json"
-
+MIN_SPAN_FRAMES = 10
 
 def subtract(span: tuple[int, int], cut: tuple[int, int]) -> list[tuple[int, int]]:
     """Remove frames [cut[0], cut[1]] from an inclusive span."""
@@ -29,9 +29,13 @@ def subtract(span: tuple[int, int], cut: tuple[int, int]) -> list[tuple[int, int
         return [span]
     out = []
     if cs > s:
-        out.append((s, min(cs - 1, e)))
+        left = (s, min(cs - 1, e))
+        if left[1] - left[0] + 1 >= MIN_SPAN_FRAMES:
+            out.append(left)
     if ce < e:
-        out.append((max(ce + 1, s), e))
+        right = (max(ce + 1, s), e)
+        if right[1] - right[0] + 1 >= MIN_SPAN_FRAMES:
+            out.append(right)
     return out
 
 
