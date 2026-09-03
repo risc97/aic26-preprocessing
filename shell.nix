@@ -16,11 +16,9 @@ let
 in
 pkgs.mkShell {
   packages = with pkgs; [
-    python310
-
+    python312
     gcc
     gnumake
-
     ngrok
     wget
     ffmpeg
@@ -38,17 +36,17 @@ pkgs.mkShell {
 
     if [ ! -d ".venv" ]; then
       echo "Creating venv..."
-      python3.10 -m venv .venv
+      python3.12 -m venv .venv
     fi
 
     # Activate the environment
     source .venv/bin/activate
 
     # Install the requirements
-    if [ -f "requirements.txt" ] && [ ! -f ".venv/.requirements-installed" ]; then
+    if [ -f "requirements.txt" ]; then
       echo "Downloading requirements.txt..."
       # Using --prefer-binary prevents pip from trying to compile heavy ML packages from source
-      pip install --prefer-binary -r requirements.txt && touch .venv/.requirements-installed
+      pip install --prefer-binary -r requirements.txt
     fi
 
     # TransNetV2 PyTorch
