@@ -16,6 +16,7 @@ opencv-python-headless
 pyarrow
 fastparquet
 numba
+setuptools<82
 
 # C2LIP encoder
 open_clip_torch>=2.31
@@ -33,8 +34,3 @@ sherpa-onnx-core
 --find-links https://csukuangfj.github.io/kaldifeat/cuda.html
 k2==1.24.4.dev20260710+cuda13.0.torch2.13.0
 kaldifeat==1.25.5.dev20260710+cuda13.0.torch2.13.0
-
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu130/
-paddlepaddle-gpu==3.3.1
-paddleocr
-vietocr

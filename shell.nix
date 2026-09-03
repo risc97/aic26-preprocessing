@@ -21,6 +21,7 @@ pkgs.mkShell {
     gnumake
     ngrok
     wget
+    curl
     ffmpeg
     parallel
   ];
@@ -42,11 +43,56 @@ pkgs.mkShell {
     # Activate the environment
     source .venv/bin/activate
 
+    # Pin the constraints for paddlepaddle_gpu
+    CONSTRAINTS="$PWD/.venv/constraints-cuda.txt"
+    {
+      echo "torch==2.13.0"
+      # torch 2.13.0's CUDA stack
+      echo "nvidia-cublas==13.1.1.3"
+      echo "nvidia-cuda-runtime==13.0.96"
+      echo "nvidia-cudnn-cu13==9.20.0.48"
+      echo "nvidia-nccl-cu13==2.29.7"
+      echo "nvidia-nvjitlink==13.3.33"
+      echo "nvidia-cuda-nvrtc==13.0.88"
+
+      echo "cuda-python==13.0.3"
+      echo "nvidia-cuda-cccl==13.0.85"
+      echo "opt-einsum==3.3.0"
+
+      echo "pyyaml==6.0.2"
+
+      echo "setuptools<82"
+    } > "$CONSTRAINTS"
+
+    export PIP_CONSTRAINT="$CONSTRAINTS"
+
     # Install the requirements
-    if [ -f "requirements.txt" ]; then
+    if [ -f "requirements.txt" ] && [ ! -f ".venv/.requirements-installed" ]; then
       echo "Downloading requirements.txt..."
       # Using --prefer-binary prevents pip from trying to compile heavy ML packages from source
-      pip install --prefer-binary -r requirements.txt
+      pip install --prefer-binary -r requirements.txt && touch .venv/.requirements-installed
+    fi
+
+    PADDLE_WHEEL="paddlepaddle_gpu-3.3.1-cp312-cp312-linux_x86_64.whl"
+    if [ ! -f ".venv/.paddle-installed" ] && [ "$(uname -m)" = "x86_64" ]; then
+      echo "Installing paddlepaddle-gpu 3.3.1..."
+      mkdir -p .venv/cache
+      curl -L -C - -o ".venv/cache/$PADDLE_WHEEL" \
+        "https://paddle-whl.cdn.bcebos.com/stable/cu130/paddlepaddle-gpu/$PADDLE_WHEEL"
+
+      pip install --no-deps ".venv/cache/$PADDLE_WHEEL"
+
+      pip install --no-deps paddleocr paddlex
+
+      pip install cuda-python nvidia-cuda-cccl opt-einsum \
+        aistudio-sdk chardet colorlog modelscope prettytable py-cpuinfo \
+        ruamel-yaml ujson aiohttp
+      pip install vietocr
+      pip uninstall -y opencv-python opencv-python-headless
+      pip install opencv-python-headless
+
+      touch .venv/.paddle-installed
+      echo "Paddle installed"
     fi
 
     # TransNetV2 PyTorch
