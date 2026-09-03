@@ -16,6 +16,17 @@ REC_CHOICES = ("vietocr", "ppocr")
 
 _READER = None
 
+import requests
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+_orig_get = requests.get
+def _get_ignore_expired_cert(url, *args, **kwargs):
+    if "vocr.vn" in url:
+        kwargs["verify"] = False
+    return _orig_get(url, *args, **kwargs)
+requests.get = _get_ignore_expired_cert
+
 
 def _init_worker(model: str, device: str, batch_size: int, rec_thresh: float,
                  rec: str, cross_check: bool) -> None:
