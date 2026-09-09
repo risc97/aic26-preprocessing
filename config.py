@@ -14,6 +14,7 @@ KEYFRAMES_DIR = DATA_PATH / "keyframes"
 OCR_DIR = DATA_PATH / "ocr"
 MEDIA_INFO_DIR = DATA_PATH / "media-info"
 INDEX_PATH = DATA_PATH / "index"
+DETECT_DIR = DATA_PATH / "detections"
 
 KEYFRAME_MODE = "mid"
 
