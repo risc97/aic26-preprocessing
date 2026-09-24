@@ -40,7 +40,7 @@ except ImportError:
     print("Install it with: pip install huggingface_hub")
     sys.exit(1)
 
-REPO_ID = "g-group-ai-lab/gipformer-65M-rnnt"
+REPO_ID = "g-group-ai-lab/gipformer-68M-rnnt"
 SAMPLE_RATE = 16000
 FEATURE_DIM = 80
 
@@ -54,14 +54,14 @@ AUDIO_EXTENSIONS = {".wav", ".ogg", ".flac", ".mp3", ".m4a"}
 
 ONNX_FILES = {
     "fp32": {
-        "encoder": "encoder-epoch-35-avg-6.onnx",
-        "decoder": "decoder-epoch-35-avg-6.onnx",
-        "joiner": "joiner-epoch-35-avg-6.onnx",
+        "encoder": "encoder.onnx",
+        "decoder": "decoder.onnx",
+        "joiner": "joiner.onnx",
     },
     "int8": {
-        "encoder": "encoder-epoch-35-avg-6.int8.onnx",
-        "decoder": "decoder-epoch-35-avg-6.int8.onnx",
-        "joiner": "joiner-epoch-35-avg-6.int8.onnx",
+        "encoder": "encoder.int8.onnx",
+        "decoder": "decoder.int8.onnx",
+        "joiner": "joiner.int8.onnx",
     },
 }
 

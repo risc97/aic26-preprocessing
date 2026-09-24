@@ -11,11 +11,7 @@ from config import VIDEOS_DIR, SCENES_DIR, KEYFRAMES_DIR, MEDIA_INFO_DIR, KEYFRA
 SCENES_SUFFIX = ".scenes.txt"
 MEDIA_INFO_SUFFIX = ".json"
 
-DECODER = "libdav1d"  # CPU AV1 decode; containers rarely expose NVDEC
-import torch
-if torch.cuda.is_available():
-    DECODER = "av1_cuvid"  # GPU AV1 decode
-
+DECODER = "auto"  # per-codec: NVDEC on a GPU box, else CPU
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
