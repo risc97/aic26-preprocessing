@@ -1,7 +1,5 @@
 """
-Split keyframe from L25 batch that contains teaching video.
-TransNetV2 have difficulies in detecting shot in a one shot video with a teacher sitting
-at a corner with a large screen showing slide he/she is teaching, talking about.
+Split keyframe from L25 batch that contains recorded video lesson.
 
 Usages:
     transnetv2_pytorch ../data/videos/ -o ../data/staging/
