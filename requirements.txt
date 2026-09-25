@@ -12,7 +12,10 @@ numpy>=2,<2.4
 pandas
 tqdm
 kaggle
-opencv-python-headless
+# opencv-python-headless
+opencv-contrib-python # for PaddleX
+pypdfium2 # for PaddleX
+pyclipper
 pyarrow
 fastparquet
 numba

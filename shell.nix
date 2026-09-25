@@ -12,6 +12,11 @@ let
     libjpeg          # Needed by image processing libraries
     libGL            # Needed by opencv-python and mediapipe
     libsndfile       # Needed by librosa (via soundfile)
+    xorg.libxcb      # Needed by non-headless opencv (contrib) for its GUI backend
+    xorg.libX11
+    xorg.libXext
+    xorg.libSM
+    xorg.libICE
   ];
 in
 pkgs.mkShell {
