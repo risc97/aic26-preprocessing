@@ -16,8 +16,19 @@ class Gte:
         self.device = torch.device(device)
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(MODEL_NAME, trust_remote_code=True)
+        self._restore_buffers()
         self.model.to(self.device).eval()
         self.amp = amp and self.device.type == "cuda"
+
+    @torch.no_grad()
+    def _restore_buffers(self):
+        # newer transformers inits on meta and skips non-persistent buffers
+        # (position_ids, rotary caches), leaving them as garbage -> OOB index
+        emb = self.model.embeddings
+        fresh = type(emb)(self.model.config)
+        for name, buf in fresh.named_buffers():
+            emb.get_buffer(name).copy_(buf)
+
 
     def _autocast(self):
         return torch.autocast(self.device.type, dtype=torch.float16, enabled=self.amp)
