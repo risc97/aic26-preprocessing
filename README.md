@@ -10,7 +10,7 @@ The system is split into three repositories:
 | --- | --- |
 | **[aic26-preprocessing](https://github.com/risc97/aic26-preprocessing)** | Process raw videos into keyframes, embeddings, OCR, transcripts and search indices |
 | [aic26-backend](https://github.com/risc97/aic26-backend) | FastAPI server to searches indices and serves keyframes and videos |
-| [aic26-frontend](https://github.com/risc97/aic26-frontend2) | UI web app for searching, reviewing and submitting results |
+| [aic26-frontend](https://github.com/risc97/aic26-frontend) | UI web app for searching, reviewing and submitting results |
 
 
 Organize these repositories like this structure:
