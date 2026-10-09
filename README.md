@@ -1,17 +1,75 @@
 # [HCMC AIC 2026] Data preprocessing
 
-The preprocessing pipeline used by to process video data. The pipeline cuts video data into *keyframes*, then uses them to produce semantic embeddings (from multiple embedding models) and various other additional data types.
+Offline preprocessing for the CISC97 video search engine at the HCMC AI Challenge 2026
 
-This pipeline is a component of a larger retrieval system, and its products would be directly used by the backend: [[HCMC AIC 2026] Backend](https://github.com/risc97/aic26-backend).
+## Overview
 
-## Requirements
+The system is split into three repositories:
 
-- A Python enviroment, preferrably Python 3.10 or above. Using virtual environment is recommended.
-- [FFmpeg](https://www.ffmpeg.org/)
-- [TransNetV2 package](https://github.com/YangTuanAnh/transnetv2_pytorch)
-  - A script can be written to manually run TransNetV2 instead but using the package is recommended for convenience.
-- Everything within `requirements.txt`.
-  - Make sure all of them are installed by running `pip install -r requirements.txt`.
+| Repository | Role |
+| --- | --- |
+| **[aic26-preprocessing](https://github.com/risc97/aic26-preprocessing)** | Process raw videos into keyframes, embeddings, OCR, transcripts and search indices |
+| [aic26-backend](https://github.com/risc97/aic26-backend) | FastAPI server to searches indices and serves keyframes and videos |
+| [aic26-frontend](https://github.com/risc97/aic26-frontend2) | UI web app for searching, reviewing and submitting results |
+
+
+Organize these repositories like this structure:
+
+```text
+aic26/
+├── data/                  # input videos + preprocessing output
+├── aic26-preprocessing/
+├── aic26-backend/
+└── aic26-frontend/
+```
+
+## Project structure
+
+```text
+aic26-preprocessing/
+├── models/                       # Encoders
+├── pipeline/                     # Shared logic used by the scripts below
+├── download_data.sh              # Script to download data
+├── find_ad_span.py               # Find ad segments from a reference clip
+├── exclude_spans.py              # Drop those segments from the scene lists
+├── split_slides.py               # Split lecture shots at slide changes
+├── resample_traffic_camera.py    # Subdivide static traffic-camera shots
+├── extract_keyframes.py          # Read scene lists to extract keyframes
+├── embed_keyframes.py            # Embed keyframes into embedding shards
+├── build_index.py                # Index embedding shards into vector index
+├── convert_to_audio.sh           # Convert videos to audio tracks
+├── extract_transcript.py         # Use Gipformer to extract transcripts from audio
+├── embed_transcript.py           # Embed transcripts into embeddings
+├── ocr_keyframes.py              # Extract OCR text from keyframes
+├── detect_keyframes.py           # Extract OWLv2 embeddings
+└── pipeline.sh                   # Every step, in order
+```
+## Usage
+
+### Prerequisites
+- **Python** 3.10+, tested on 3.12
+- **FFmpeg** and **GNU parallel**
+- **CUDA GPU** (recommended)
+
+### Installation
+```bash
+pwd # Make sure you are in aic26/
+git clone https://github.com/risc97/aic26-preprocessing.git
+cd aic26-preprocessing
+```
+
+- **NixOS:** run `nix-shell`
+- **Other:**
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# TransNetV2
+git clone --depth 1 https://github.com/YangTuanAnh/transnetv2_pytorch.git .venv/vendor/transnetv2_pytorch
+pip install -e .venv/vendor/transnetv2_pytorch
+```
+
+PaddlePaddle is only needed for OCR (`ocr_keyframes.py`). It is optional, and the install depends on your CUDA version. See the Paddle block in [shell.nix](./shell.nix) for the exact steps.
 
 ## Data preparation
 
@@ -27,51 +85,46 @@ data/
 │   ├── VID_001.json
 │   ├── VID_097.json
 │   └── ...
-└── checkpoints/       # A custom path could be passed into the script instead
-aic26-preprocessing/
+└── checkpoints/       # Your fine-tuned checkpoint
 ```
 
-Now the data can be processed by following the section below. After running the pipeline you should see additional directories storing the products of the process:
+## Run
 
+```bash
+# 1. Shot detection
+transnetv2_pytorch ../data/videos/ -o ../data/staging/
+
+# 2. Content-aware refinement
+## Post-preprocess recorded lesson videos
+python find_ad_span.py --ref-video L25_V060 --ref-start 0 --ref-end 67
+python find_ad_span.py --ref-video L25_V060 --ref-start 1388 --ref-end 2886
+python find_ad_span.py --ref-video L25_V060 --ref-start 18790 --ref-end 20898
+python find_ad_span.py --ref-video L25_V060 --ref-start 37957 --ref-end 39455
+python exclude_spans.py
+
+python split_slides.py
+
+## Post-preprocess static traffic camera
+python resample_traffic_camera.py
+
+# 3. Keyframes
+python extract_keyframes.py
+
+# 4. Text-image embeddings (model: siglip, siglip2, pe)
+python embed_keyframes.py --model siglip2 --batch-size 32
+python build_index.py --model siglip2
+
+# 5. Visual embeddings
+python embed_keyframes.py --model dinov3 --batch-size 96
+python build_index.py --model dinov3
+
+# 6. Speech transcripts
+./convert_to_audio.sh
+python extract_transcript.py --audio-dir data/audios
+python embed_transcript.py
+python build_index.py --model gte --index data/index/gte-transcripts.tvim
+
+# 7. OCR and object detection
+python ocr_keyframes.py
+python detect_keyframes.py
 ```
-data/
-├── videos/            # Videos
-├── media-info/        # Metadata
-├── staging/           # Keyframe timestamps in text files (VID_001.scenes.txt)
-├── keyframes/         # Keyframes, organized by folders
-│   ├── VID_001/
-│   │   ├── 0001.jpeg
-│   │   └── ...
-│   └── ...
-├── embeddings/        # Embedding shards
-├── index/             # Embedding indices
-├── ocr/               # Per-video OCR text (VID_001.json)
-├── checkpoints/       # Checkpoints
-└── metadata.db
-aic26-preprocessing/
-```
-
-## Running the pipeline
-
-First start by setting up the environment:
-
-- **NixOS**: run `nix-shell`. It automatically sets up a virtual environment and installs all requirements.
-- **Other**: Make sure all dependencies in the [requirements](#requirements) are installed, then run `pip install -r requirements.txt` in your Python environment.
-
-Should you want to use the competition's data instead of your own, download them using `./download_data.sh`. Note that the links might expire and the data could no longer be available. Don't forget to [prepare the data](#data-preparation) first.
-
-Now move into this repository's directory and run these commands in order:
-- `transnetv2_pytorch ../data/videos/ -o ../data/staging/` - runs keyframe detection
-- `python init_db.py` - starts database to store metadata
-- `python extract_keyframes.py` - extracts keyframes from detection results
-- `python embed_keyframes.py` - embeds the extracted keyframes
-- `python ocr_keyframes.py` - OCRs the extracted keyframes
-- `python build_index.py` - builds indices for the embeddings
-
-Each of the above scripts have their own arguments, which can be custom-passed and can be shown by running `<script-name> --help`. Specifically, it is highly recommended to view the arguments of `embed_keyframes.py` to see how one can pick a preferred embedding model to use.
-
-## What's next?
-
-The project is structured in such a manner that allows the user to extend their use to other models outside of the project's scope. One could add their own model by inheriting the base encoder in `models/base.py` and implement the model's class.
-
-Once the indices building is done, see [[HCMC AIC 2026] Backend](https://github.com/risc97/aic26-backend) on how to use them.
