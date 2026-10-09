@@ -41,8 +41,7 @@ aic26-preprocessing/
 ├── extract_transcript.py         # Use Gipformer to extract transcripts from audio
 ├── embed_transcript.py           # Embed transcripts into embeddings
 ├── ocr_keyframes.py              # Extract OCR text from keyframes
-├── detect_keyframes.py           # Extract OWLv2 embeddings
-└── pipeline.sh                   # Every step, in order
+└── detect_keyframes.py           # Extract OWLv2 embeddings
 ```
 ## Usage
 
