@@ -36,6 +36,7 @@ pkgs.mkShell {
 
     if [ -d /run/opengl-driver/lib ]; then
       export LD_LIBRARY_PATH="/run/opengl-driver/lib:$LD_LIBRARY_PATH"
+      export TRITON_LIBCUDA_PATH=/run/opengl-driver/lib
     else
       echo "warning: /run/opengl-driver/lib not found -- GPU may be unavailable"
     fi
